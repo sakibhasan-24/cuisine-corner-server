@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
 require("dotenv").config();
@@ -36,6 +36,13 @@ async function run() {
       const data = await reviesCollection.find().toArray();
       res.send(data);
     });
+    // get all orders data
+    app.get("/items", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const result = await itemsCollection.find(query).toArray();
+      res.status(200).send(result);
+    });
     app.post("/items", async (req, res) => {
       const data = req.body;
       console.log(data);
@@ -43,6 +50,12 @@ async function run() {
       res
         .status(201)
         .send({ message: "successfully added", result, success: true });
+    });
+    // delete
+    app.delete("/items/:id", async (req, res) => {
+      const query = { _id: new ObjectId(req.params.id) };
+      const result = await itemsCollection.deleteOne(query);
+      res.send(result);
     });
   } finally {
     console.log("yes!!!!");
