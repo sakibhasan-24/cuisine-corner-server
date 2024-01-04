@@ -25,9 +25,17 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     client.connect();
+    const users = client.db("Cuisine-corner").collection("users");
     const menuDatabase = client.db("Cuisine-corner").collection("Menu");
     const reviesCollection = client.db("Cuisine-corner").collection("Review");
     const itemsCollection = client.db("Cuisine-corner").collection("Items");
+
+    // user related Api
+    app.post("/users", async (req, res) => {
+      const data = req.body;
+      const result = await users.insertOne(data);
+      res.status(201).send(result);
+    });
     app.get("/menu", async (req, res) => {
       const data = await menuDatabase.find().toArray();
       res.send(data);
