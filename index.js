@@ -60,7 +60,7 @@ async function run() {
     app.post("/jwt", async (req, res) => {
       const data = req.body;
       const token = jwt.sign(data, process.env.ACCESS_TOKEN_SECRET);
-      console.log(token);
+      // console.log(token);
       res.send({ token });
     });
     // user related Api
@@ -79,6 +79,8 @@ async function run() {
 
       res.send(result);
     });
+    // meke admin role related api
+
     app.patch("/users/admin/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -86,11 +88,29 @@ async function run() {
       const result = await users.updateOne(filter, updateDoc);
       res.send(result);
     });
+    // check admin or not
+    app.get("/user/admin/:email", verfiyToken, async (req, res) => {
+      const email = req.params.email;
+      console.log("decode", req.decoded);
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      const query = { email: email };
+      const user = await users.findOne(query);
+      let admin = false;
+      if (user) {
+        admin = user?.role === "admin" ? true : false;
+      }
+      res.send({ admin: admin });
+    });
+    // check admin or not
+
     app.delete("/users/:id", async (req, res) => {
       const query = { _id: new ObjectId(req.params.id) };
       const result = await users.deleteOne(query);
       res.send(result);
     });
+    // menu related API
     app.get("/menu", async (req, res) => {
       const data = await menuDatabase.find().toArray();
       res.send(data);
@@ -108,7 +128,7 @@ async function run() {
     });
     app.post("/items", async (req, res) => {
       const data = req.body;
-      console.log(data);
+      // console.log(data);
       const result = await itemsCollection.insertOne(data);
       res
         .status(201)
