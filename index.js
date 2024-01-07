@@ -56,6 +56,19 @@ async function run() {
         next();
       });
     };
+    // verifyAdmin
+    const verifyAdmin = async (req, res, next) => {
+      const adminEmail = req.decoded.email;
+      const query = { email: adminEmail };
+      const user = await users.findOne(query);
+      const isAdmin = user?.role === "admin";
+      if (!isAdmin) {
+        return res
+          .status(403)
+          .send({ error: true, message: "unauthorized access" });
+      }
+      next();
+    };
     // jwt
     app.post("/jwt", async (req, res) => {
       const data = req.body;
@@ -73,7 +86,7 @@ async function run() {
       const result = await users.insertOne(data);
       res.status(201).send(result);
     });
-    app.get("/users", verfiyToken, async (req, res) => {
+    app.get("/users", verfiyToken, verifyAdmin, async (req, res) => {
       // console.log(req.headers);
       const result = await users.find().toArray();
 
@@ -81,15 +94,20 @@ async function run() {
     });
     // meke admin role related api
 
-    app.patch("/users/admin/:id", async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: new ObjectId(id) };
-      const updateDoc = { $set: { role: "admin" } };
-      const result = await users.updateOne(filter, updateDoc);
-      res.send(result);
-    });
+    app.patch(
+      "/users/admin/:id",
+      verfiyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = { $set: { role: "admin" } };
+        const result = await users.updateOne(filter, updateDoc);
+        res.send(result);
+      }
+    );
     // check admin or not
-    app.get("/user/admin/:email", verfiyToken, async (req, res) => {
+    app.get("/users/admin/:email", verfiyToken, async (req, res) => {
       const email = req.params.email;
       console.log("decode", req.decoded);
       if (email !== req.decoded.email) {
@@ -105,7 +123,7 @@ async function run() {
     });
     // check admin or not
 
-    app.delete("/users/:id", async (req, res) => {
+    app.delete("/users/:id", verfiyToken, verifyAdmin, async (req, res) => {
       const query = { _id: new ObjectId(req.params.id) };
       const result = await users.deleteOne(query);
       res.send(result);
