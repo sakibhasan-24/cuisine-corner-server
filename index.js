@@ -109,7 +109,7 @@ async function run() {
     // check admin or not
     app.get("/users/admin/:email", verfiyToken, async (req, res) => {
       const email = req.params.email;
-      console.log("decode", req.decoded);
+      // console.log("decode", req.decoded);
       if (email !== req.decoded.email) {
         return res.status(403).send({ message: "forbidden access" });
       }
@@ -132,6 +132,41 @@ async function run() {
     app.get("/menu", async (req, res) => {
       const data = await menuDatabase.find().toArray();
       res.send(data);
+    });
+    app.get("/menu/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await menuDatabase.findOne(query);
+
+      res.send(result);
+    });
+    app.post("/menu", verfiyToken, verifyAdmin, async (req, res) => {
+      const item = req.body;
+      const result = await menuDatabase.insertOne(item);
+      res.send(result);
+    });
+    app.delete("/menu/:id", verfiyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await menuDatabase.deleteOne(query);
+      res.send(result);
+    });
+    app.patch("/menu/:id", async (req, res) => {
+      const id = req.params.id;
+      const item = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          name: item.name,
+          recipe: item.recipe,
+          image: item.image,
+          price: item.price,
+          category: item.category,
+        },
+      };
+      const result = await menuDatabase.updateOne(filter, updateDoc);
+      console.log(result);
+      res.send(result);
     });
     app.get("/review", async (req, res) => {
       const data = await reviesCollection.find().toArray();
