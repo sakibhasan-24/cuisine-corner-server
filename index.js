@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const stripe = require("stripe")(process.env.SECRET_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
@@ -149,6 +150,7 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await menuDatabase.deleteOne(query);
+      console.log(result);
       res.send(result);
     });
     app.patch("/menu/:id", async (req, res) => {
@@ -170,6 +172,7 @@ async function run() {
     });
     app.get("/review", async (req, res) => {
       const data = await reviesCollection.find().toArray();
+
       res.send(data);
     });
     // get all orders data
@@ -192,6 +195,20 @@ async function run() {
       const query = { _id: new ObjectId(req.params.id) };
       const result = await itemsCollection.deleteOne(query);
       res.send(result);
+    });
+
+    // payment functionality
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
     });
   } finally {
     console.log("yes!!!!");
