@@ -237,6 +237,74 @@ async function run() {
       const result = await paymentCollection.find(query).toArray();
       res.send(result);
     });
+    // state(user,order,revinew) for admin
+    app.get("/state/admin", async (req, res) => {
+      const user = await users.estimatedDocumentCount();
+      const menuItems = await menuDatabase.estimatedDocumentCount();
+      // const menu = await itemsCollection.estimatedDocumentCount();
+      // const payments = await paymentCollection.find().toArray();
+      const orders = await paymentCollection.estimatedDocumentCount();
+      // const price = payments.reduce((acc, curr) => acc + curr.price, 0);
+      const result = await paymentCollection
+        .aggregate([
+          {
+            $group: {
+              _id: null,
+              totalRevenue: { $sum: "$price" },
+            },
+          },
+        ])
+        .toArray();
+      // console.log(result[0]);
+      const price = result.length > 0 ? result[0].totalRevenue : 0;
+      res.send({ user, menuItems, orders, price });
+    });
+    // order state
+    app.get(
+      "/admin-order-state",
+
+      async (req, res) => {
+        const result = await paymentCollection
+          .aggregate([
+            {
+              $unwind: "$menuItemsId",
+            },
+            {
+              $lookup: {
+                from: "Menu",
+                localField: "menuItemsId",
+                foreignField: "_id",
+                as: "menuItems",
+              },
+            },
+            {
+              $unwind: "$menuItems",
+            },
+            {
+              $group: {
+                _id: "$menuItems.category",
+                quantity: {
+                  $sum: 1,
+                },
+                totalRevenue: {
+                  $sum: "$menuItems.price",
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                category: "$_id",
+                quantity: "$quantity",
+                totalRevenue: "$totalRevenue",
+              },
+            },
+          ])
+          .toArray();
+        // console.log(result);
+        res.send(result);
+      }
+    );
   } finally {
     console.log("yes!!!!");
   }
